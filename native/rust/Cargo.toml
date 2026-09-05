@@ -1,0 +1,17 @@
+[package]
+name = "stow_nif"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "stow_nif"
+crate-type = ["cdylib"]
+
+[dependencies]
+blake3 = "1.8"
+rustler = "0.38"
+xxhash-rust = { version = "0.8", features = ["xxh3"] }
+
+[profile.release]
+lto = true
+opt-level = 3
