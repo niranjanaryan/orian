@@ -10,7 +10,7 @@ defmodule Orian.Engine do
   alias Orian.S3.Object
 
   def loaded? do
-    function_exported?(Orian.Rs, :bulk, 2) and apply(Orian.Rs, :engine_loaded, []) == true
+    match?({:ok, 0, 0}, Orian.Rs.bulk([], 1))
   rescue
     _ -> false
   end

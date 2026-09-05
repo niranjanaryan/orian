@@ -103,18 +103,11 @@ defmodule Orian.Transfer do
   end
 
   defp run_engine(jobs, workers, opts) do
-    {native, rest} = Enum.split_with(jobs, &native_job?/1)
+    tagged = Enum.map(jobs, fn j -> {j, encode_native(j, opts)} end)
+    native_jobs = for {_, enc} when not is_nil(enc) <- tagged, do: enc
+    rest = for {j, nil} <- tagged, do: j
 
-    native_jobs =
-      Enum.map(native, fn job -> encode_native(job, opts) end)
-      |> Enum.reject(&is_nil/1)
-
-    beam =
-      run_beam(
-        rest ++ Enum.filter(native, fn j -> is_nil(encode_native(j, opts)) end),
-        workers,
-        opts
-      )
+    beam = run_beam(rest, workers, opts)
 
     eng =
       if native_jobs == [] do
@@ -132,12 +125,6 @@ defmodule Orian.Transfer do
       errors: (beam[:errors] || []) ++ eng.errors
     }
   end
-
-  defp native_job?(%{src: src, dst: dst}) do
-    (Loc.local?(src) and Loc.objectstore?(dst)) or (Loc.objectstore?(src) and Loc.local?(dst))
-  end
-
-  defp native_job?(_), do: false
 
   defp encode_native(%{src: src, dst: dst}, opts) do
     cond do
