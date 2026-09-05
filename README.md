@@ -33,4 +33,6 @@ Stow.put(body, backend: :s5, endpoint: "http://127.0.0.1:5050")
 
 `Stow.blake3/1` is the Zig NIF. `Stow.Rs.blake3/1` is the official Rust `blake3` crate (same digest). See [HASH.md](HASH.md).
 
+`mix bench` — [benchmark/RESULTS.md](benchmark/RESULTS.md). On Apple silicon / OTP 29, 1 MiB: Zig BLAKE3 **1.3 GiB/s**, Rust BLAKE3 **1.5 GiB/s**, XXH3 **~26–30 GiB/s**. Digests match.
+
 MIT. https://github.com/niranjanaryan/stow

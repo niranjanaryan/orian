@@ -48,7 +48,10 @@ defmodule Stow.MixProject do
   end
 
   defp docs do
-    [main: "Stow", extras: ["README.md", "LICENSE", "CHANGELOG.md", "HASH.md"]]
+    [
+      main: "Stow",
+      extras: ["README.md", "LICENSE", "CHANGELOG.md", "HASH.md", "benchmark/RESULTS.md"]
+    ]
   end
 
   defp package do
@@ -63,7 +66,7 @@ defmodule Stow.MixProject do
         "Dusk" => "https://github.com/niranjanaryan/dusk"
       },
       files:
-        ~w(lib native/zig native/rust/src native/rust/Cargo.toml Makefile mix.exs README.md LICENSE CHANGELOG.md HASH.md .formatter.exs)
+        ~w(lib native/zig native/rust/src native/rust/Cargo.toml Makefile mix.exs README.md LICENSE CHANGELOG.md HASH.md benchmark/RESULTS.md .formatter.exs)
     ]
   end
 end
