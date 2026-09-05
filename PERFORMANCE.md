@@ -19,7 +19,7 @@ BEAM `:httpc` remains a fallback if the NIF is missing.
 | `part_size` | 16 MiB | multipart PUT / range GET |
 | HTTP | keep-alive pool 512 sessions | `:httpc` profile `:orian` |
 
-Hash NIFs run as **dirty CPU** jobs so they do not stall BEAM schedulers. `Orian.blake3/1` uses the **Rust** `blake3` crate when that NIF is loaded.
+Hash NIFs are **dirty CPU**. Production `blake3`/`xxh3` is **Zig** (won the 1–8 MiB benches). The **Rust/Tokio engine** is the transfer path.
 
 Transfer does **not** hash every byte by default (`blake3: false`). Pass `--blake3` / `blake3: true` when you want `x-amz-meta-blake3`.
 

@@ -22,13 +22,10 @@ defmodule Orian do
   defdelegate cp(src, dst, opts \\ []), to: Orian.Transfer
   defdelegate sync(src, dst, opts \\ []), to: Orian.Transfer
 
-  def blake3(bin) when is_binary(bin) do
-    if rust_loaded?(), do: Orian.Rs.blake3(bin), else: Orian.Native.blake3(bin)
-  end
+  # Zig NIF won the 1 MiB BLAKE3 and 8 MiB XXH3 benches; no per-call Rust probe.
+  def blake3(bin) when is_binary(bin), do: Orian.Native.blake3(bin)
 
-  def xxh3(bin) when is_binary(bin) do
-    if rust_loaded?(), do: Orian.Rs.xxh3(bin), else: Orian.Native.xxh3(bin)
-  end
+  def xxh3(bin) when is_binary(bin), do: Orian.Native.xxh3(bin)
 
   def hash64(bin) when is_binary(bin), do: Orian.Native.hash64(bin)
 

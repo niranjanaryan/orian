@@ -8,6 +8,6 @@ Orian is the hash + blob package for Gale / Ingot / Dusk.
 | **XXH3-64** | No | Checksums, cache keys |
 | SHA-256 | Yes | AWS SigV4 only (S3 protocol) |
 
-Zig `std.crypto.hash.Blake3` is the default NIF. The Rust NIF uses the official `blake3` crate (C+asm, usually faster). Digests must match. `mix bench` prints MiB/s for both.
+**Production hasher is the Zig NIF** (best measured 1 MiB BLAKE3 / 8 MiB XXH3). Rust `blake3` crate is kept for the transfer engine and `mix bench` agreement checks. Digests must match.
 
 Do not use XXH3 as a blob id.
