@@ -12,6 +12,7 @@ defmodule Orian.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       aliases: aliases(),
+      escript: [main_module: Orian.CLI],
       docs: docs(),
       package: package(),
       description: description(),
@@ -44,7 +45,7 @@ defmodule Orian.MixProject do
   end
 
   defp description do
-    "Fast content-addressed storage for Elixir: BLAKE3 + XXH3 (Zig/Rust NIFs), S3 and S5."
+    "s5cmd/Skyplane-class object transfer for Elixir: parallel cp/sync, BLAKE3, S3 and S5."
   end
 
   defp docs do

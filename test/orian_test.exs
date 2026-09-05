@@ -42,4 +42,50 @@ defmodule OrianTest do
     assert b.zig_nif
     assert is_boolean(b.rust_nif)
   end
+
+  test "URI parse s3 gs and local" do
+    s = Orian.URI.parse("s3://bkt/a/b.bin")
+    assert s.scheme == :s3 and s.bucket == "bkt" and s.key == "a/b.bin"
+    g = Orian.URI.parse("gs://g/x")
+    assert g.scheme == :gs and g.bucket == "g"
+    f = Orian.URI.parse("/tmp/x")
+    assert Orian.URI.local?(f)
+  end
+
+  test "S3 list XML parse" do
+    xml = """
+    <ListBucketResult>
+      <Contents><Key>a/f.txt</Key><Size>12</Size><ETag>&quot;abc&quot;</ETag></Contents>
+      <IsTruncated>false</IsTruncated>
+    </ListBucketResult>
+    """
+
+    {items, trunc, token} = Orian.S3.XML.list_objects(xml)
+    assert trunc == false and token == nil
+    assert hd(items).key == "a/f.txt"
+    assert hd(items).size == 12
+  end
+
+  test "local glob cp and sync" do
+    root = Path.join(System.tmp_dir!(), "orian-#{System.unique_integer([:positive])}")
+    src = Path.join(root, "src")
+    dst = Path.join(root, "dst")
+    File.mkdir_p!(src)
+    File.write!(Path.join(src, "a.txt"), "hello")
+    File.write!(Path.join(src, "b.txt"), "world")
+
+    assert {:ok, %{ok: 2, error: 0}} = Orian.cp(Path.join(src, "*"), dst <> "/")
+    assert File.read!(Path.join(dst, "a.txt")) == "hello"
+    assert {:ok, %{ok: 0, error: 0}} = Orian.sync(src, dst)
+    File.write!(Path.join(src, "c.txt"), "new")
+    assert {:ok, %{ok: 1, error: 0}} = Orian.sync(src, dst)
+    assert File.read!(Path.join(dst, "c.txt")) == "new"
+  after
+    # tmp cleaned by OS
+    :ok
+  end
+
+  test "CLI help" do
+    assert :ok = Orian.CLI.main(["--help"])
+  end
 end

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- s5cmd/Skyplane-class `Orian.Transfer` + `mix orian` (`cp`, `sync`, `ls`, `rm`, `cat`, `run`)
+- Parallel workers, multipart PUT, S3 CopyObject / streamed S3↔S3
 - Renamed package **stow → orian**
 - `mix bench` writes `benchmark/RESULTS.md` (Zig vs Rust vs OTP)
 

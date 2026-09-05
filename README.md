@@ -1,38 +1,38 @@
 # Orian
 
-Fast **content-addressed storage** for Elixir. Zig NIF + Rust NIF.
+Fast object transfer for Elixir — **s5cmd** / **Skyplane** class, plus BLAKE3 content ids.
 
 ```
 gale  — Phoenix HTTP/3
 ingot — Iroh + Zenoh cluster
 dusk  — Zenoh + Iroh cluster
-orian  — BLAKE3 / S3 / S5 blobs
+orian — parallel S3/S5 transfer
 ```
 
 ```elixir
 {:orian, "~> 0.1"}
 
-{:ok, cid} = Orian.put(body)
-{:ok, ^body} = Orian.get(cid)
-
-Orian.put(body,
-  backend: :s3,
-  bucket: "blobs",
-  unsigned: true,
-  host: "127.0.0.1:9000",
-  scheme: "http"
-)
-
-Orian.put(body, backend: :s5, endpoint: "http://127.0.0.1:5050")
+mix orian cp   data/*          s3://bucket/prefix/
+mix orian sync s3://src/p/     s3://dst/p/
+mix orian ls   s3://bucket/
+mix orian run  jobs.txt
 ```
 
-- **BLAKE3** — object identity (S5 CID, `x-amz-meta-blake3`)
-- **XXH3** — routing / checksum only
-- **S3** — SigV4 or unsigned MinIO; key defaults to hex(BLAKE3)
-- **S5** — `0x5b 0x82 0x1e` + BLAKE3 + size; HTTP `/s5/upload` and `/s5/blob/{hex}`
+```elixir
+Orian.Transfer.cp("data/*", "s3://bucket/", numworkers: 64, concurrency: 8)
+```
 
-`Orian.blake3/1` is the Zig NIF. `Orian.Rs.blake3/1` is the official Rust `blake3` crate (same digest). See [HASH.md](HASH.md).
+| | s5cmd | Skyplane | Orian |
+| --- | --- | --- | --- |
+| Parallel object workers | `--numworkers` | gateway VMs | `numworkers` |
+| Multipart / parts per file | `--concurrency` | chunk + connections | `concurrency` + part size |
+| `cp` `sync` `ls` `rm` `run` | yes | `cp` `sync` | yes |
+| Cross-cloud overlay VMs | no | yes | not yet (streamed S3↔S3) |
+| BLAKE3 / S5 CID | no | no | yes (Zig + Rust NIF) |
+| S3-compatible / MinIO / `gs://` XML | yes | AWS/GCP/Azure | S3 XML + endpoint-url |
 
-`mix bench` — [benchmark/RESULTS.md](benchmark/RESULTS.md). On Apple silicon / OTP 29, 1 MiB: Zig BLAKE3 **1.3 GiB/s**, Rust BLAKE3 **1.5 GiB/s**, XXH3 **~26–30 GiB/s**. Digests match.
+Tune like s5cmd: many small files → high `numworkers`; few large files → high `concurrency`.
 
-MIT. https://github.com/niranjanaryan/orian
+Env: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_ENDPOINT_URL`.
+
+`mix bench` hashes: [benchmark/RESULTS.md](benchmark/RESULTS.md). MIT. https://github.com/niranjanaryan/orian

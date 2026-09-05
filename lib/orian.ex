@@ -1,16 +1,15 @@
 defmodule Orian do
   @moduledoc """
-  Fast blob storage for Elixir.
+  Fast object transfer and content-addressed storage — **s5cmd** / **Skyplane** class.
 
-  **BLAKE3** is the content id (S5 CID, S3 metadata). **XXH3** is the
-  non-crypto checksum. Zig NIF is the default; Rust NIF (`Orian.Rs`) is
-  the reference implementation (official `blake3` crate).
+      mix orian cp data/* s3://bucket/prefix/
+      mix orian sync s3://src/ s3://dst/
+      Orian.Transfer.cp("data/*", "s3://bucket/", numworkers: 64, concurrency: 8)
+
+  Workers for many objects (`numworkers`), multipart parts per object
+  (`concurrency`). BLAKE3 is the content id; XXH3 is checksum-only.
 
       {:ok, cid} = Orian.put(body)
-      {:ok, ^body} = Orian.get(cid)
-
-      Orian.put(body, backend: :s3, bucket: "b", unsigned: true, host: "127.0.0.1:9000", scheme: "http")
-      Orian.put(body, backend: :s5, endpoint: "http://127.0.0.1:5050")
 
   Clustering stays [Ingot](https://github.com/niranjanaryan/ingot) /
   [Dusk](https://github.com/niranjanaryan/dusk). HTTP/3 is
@@ -20,6 +19,8 @@ defmodule Orian do
   defdelegate put(data, opts \\ []), to: Orian.Store
   defdelegate get(cid, opts \\ []), to: Orian.Store
   defdelegate verify(data, cid), to: Orian.Store
+  defdelegate cp(src, dst, opts \\ []), to: Orian.Transfer
+  defdelegate sync(src, dst, opts \\ []), to: Orian.Transfer
 
   def blake3(bin) when is_binary(bin), do: Orian.Native.blake3(bin)
   def xxh3(bin) when is_binary(bin), do: Orian.Native.xxh3(bin)
