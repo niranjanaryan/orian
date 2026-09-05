@@ -11,12 +11,21 @@ orian — parallel S3/S5 transfer
 
 ```elixir
 {:orian, "~> 0.1"}
-
-mix orian cp   data/*          s3://bucket/prefix/
-mix orian sync s3://src/p/     s3://dst/p/
-mix orian ls   s3://bucket/
-mix orian run  jobs.txt
 ```
+
+```bash
+# from this repo
+mix orian.install          # ~/.local/bin/orian  +  ~/.orian/priv NIFs
+
+orian cp   data/*       s3://bucket/prefix/
+orian sync s3://src/p/  s3://dst/p/
+orian ls   s3://bucket/
+orian --dry-run cp data/ s3://bucket/
+orian run  jobs.txt
+orian version
+```
+
+Inside a Mix project that depends on Orian: `mix orian cp …` (same CLI).
 
 ```elixir
 Orian.Transfer.cp("data/*", "s3://bucket/", numworkers: 64, concurrency: 8)

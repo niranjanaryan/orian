@@ -12,7 +12,7 @@ defmodule Orian.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       aliases: aliases(),
-      escript: [main_module: Orian.CLI],
+      escript: [main_module: Orian.CLI, name: "orian"],
       docs: docs(),
       package: package(),
       description: description(),
@@ -40,7 +40,8 @@ defmodule Orian.MixProject do
   defp aliases do
     [
       test: ["orian.build", "test"],
-      bench: ["orian.build", "orian.bench"]
+      bench: ["orian.build", "orian.bench"],
+      "orian.cli": ["orian.build", "escript.build"]
     ]
   end
 

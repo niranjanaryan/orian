@@ -86,7 +86,8 @@ defmodule OrianTest do
   end
 
   test "CLI help" do
-    assert :ok = Orian.CLI.main(["--help"])
+    assert :ok = Orian.CLI.main(["--help"], halt: false)
+    assert :ok = Orian.CLI.main(["version"], halt: false)
   end
 
   test "Rust transfer engine is loaded" do

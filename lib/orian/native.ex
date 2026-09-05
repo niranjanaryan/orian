@@ -3,15 +3,43 @@ defmodule Orian.Native do
   @on_load :load_nif
 
   def load_nif do
-    path =
-      case :code.priv_dir(:orian) do
-        {:error, _} -> Path.expand("../../priv/orian_nif", __DIR__)
-        dir -> Path.join(dir, "orian_nif")
+    Enum.find_value(nif_candidates(), fn path ->
+      case :erlang.load_nif(String.to_charlist(path), 0) do
+        :ok -> true
+        {:error, _} -> false
       end
+    end)
 
-    :erlang.load_nif(String.to_charlist(path), 0)
+    :ok
   rescue
     _ -> :ok
+  end
+
+  defp nif_candidates do
+    app =
+      case :code.priv_dir(:orian) do
+        {:error, _} -> []
+        dir -> [Path.join(dir, "orian_nif")]
+      end
+
+    home = Path.join(Path.expand("~/.orian/priv"), "orian_nif")
+    env = System.get_env("ORIAN_PRIV")
+    env = if env, do: [Path.join(env, "orian_nif")], else: []
+    script = escript_priv()
+    app ++ env ++ [home] ++ script ++ [Path.expand("../../priv/orian_nif", __DIR__)]
+  end
+
+  defp escript_priv do
+    case :escript.script_name() do
+      :undefined ->
+        []
+
+      name ->
+        dir = name |> to_string() |> Path.dirname()
+        [Path.join(dir, "priv/orian_nif"), Path.join([dir, "..", ".orian", "priv", "orian_nif"])]
+    end
+  rescue
+    _ -> []
   end
 
   def blake3(_bin), do: :erlang.nif_error(:nif_not_loaded)

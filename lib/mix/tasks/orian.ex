@@ -1,11 +1,11 @@
 defmodule Mix.Tasks.Orian do
-  @moduledoc "s5cmd-style object transfer. See `Orian.CLI`."
+  @moduledoc "Orian CLI. Same as the `orian` escript."
   use Mix.Task
-  @shortdoc "cp / sync / ls / rm / cat / run (s5cmd-class)"
+  @shortdoc "orian cp|sync|ls|rm|cat|run"
 
   @impl Mix.Task
   def run(args) do
     Mix.Task.run("app.start")
-    Orian.CLI.main(args)
+    Orian.CLI.main(args, halt: false)
   end
 end

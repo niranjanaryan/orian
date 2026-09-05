@@ -1,35 +1,45 @@
 defmodule Orian.CLI do
   @moduledoc """
-  s5cmd-style CLI. `mix orian cp|sync|ls|rm|run|cat`.
+  Standalone CLI (`orian`) and Mix task (`mix orian`).
   """
 
+  @version Mix.Project.config()[:version]
+
   @help """
-  orian — fast object transfer (s5cmd / Skyplane class)
+  orian #{@version} — fast object transfer (s5cmd / Skyplane class)
 
-    mix orian cp   SRC DST
-    mix orian sync SRC DST
-    mix orian ls   LOC
-    mix orian rm   LOC
-    mix orian cat  LOC
-    mix orian run  FILE   # one command per line, parallel
+    orian cp   SRC DST
+    orian sync SRC DST
+    orian ls   LOC
+    orian rm   LOC
+    orian cat  LOC
+    orian run  FILE
+    orian version
 
-  SRC/DST: local path, glob, s3://bucket/key, gs://bucket/key
+  SRC/DST: path, glob, s3://bucket/key, gs://bucket/key
 
   Flags:
-    --numworkers N     parallel objects (default: max(32, schedulers*8))
-    --concurrency N    parallel parts per object (default 16)
-    --part-size MiB    multipart / range size (default 16)
-    --endpoint-url URL S3-compatible endpoint
+    --numworkers N      parallel objects
+    --concurrency N     parts per object
+    --part-size MiB     multipart / range size
+    --endpoint-url URL  S3-compatible endpoint
     --region R
     --unsigned
     --dry-run
-    --no-blake3
+    --blake3            write x-amz-meta-blake3
+    -h, --help
 
   Env: AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_REGION AWS_ENDPOINT_URL
+
+  Install: mix orian.install   (escript → ~/.local/bin/orian)
   """
 
-  def main(args) do
-    {opts, rest, _} =
+  def main(args), do: main(args, halt: !mix?())
+
+  def main(args, opts) do
+    _ = Application.ensure_all_started(:orian)
+
+    {parsed, rest, _} =
       OptionParser.parse(args,
         strict: [
           numworkers: :integer,
@@ -40,18 +50,31 @@ defmodule Orian.CLI do
           unsigned: :boolean,
           dry_run: :boolean,
           blake3: :boolean,
-          help: :boolean
+          help: :boolean,
+          version: :boolean
         ],
-        aliases: [h: :help, n: :numworkers, c: :concurrency]
+        aliases: [h: :help, n: :numworkers, c: :concurrency, v: :version]
       )
 
-    if opts[:help] or rest == [] do
-      Mix.shell().info(@help)
-      :ok
-    else
-      kw = to_kw(opts)
-      dispatch(rest, kw)
-    end
+    result =
+      cond do
+        parsed[:help] == true ->
+          info(@help)
+          :ok
+
+        parsed[:version] == true or rest == ["version"] ->
+          info("orian #{@version}")
+          :ok
+
+        rest == [] ->
+          info(@help)
+          :ok
+
+        true ->
+          dispatch(rest, to_kw(parsed))
+      end
+
+    finish(result, Keyword.get(opts, :halt, false))
   end
 
   defp dispatch(["cp", src, dst | _], kw), do: print_stats(Orian.Transfer.cp(src, dst, kw))
@@ -60,11 +83,11 @@ defmodule Orian.CLI do
   defp dispatch(["ls", loc | _], kw) do
     case Orian.Transfer.ls(loc, kw) do
       {:ok, items} ->
-        Enum.each(items, fn %{key: k, size: s} -> Mix.shell().info("#{s}\t#{k}") end)
+        Enum.each(items, fn %{key: k, size: s} -> info("#{s}\t#{k}") end)
         :ok
 
       {:error, e} ->
-        Mix.shell().error(inspect(e))
+        err(inspect(e))
         {:error, e}
     end
   end
@@ -72,7 +95,7 @@ defmodule Orian.CLI do
   defp dispatch(["rm", loc | _], kw) do
     case Orian.Transfer.rm(loc, kw) do
       :ok -> :ok
-      other -> Mix.shell().error(inspect(other))
+      other -> err(inspect(other))
     end
   end
 
@@ -81,12 +104,18 @@ defmodule Orian.CLI do
 
     cond do
       Orian.URI.local?(u) ->
-        Mix.shell().info(File.read!(u.path))
+        IO.binwrite(:stdio, File.read!(u.path))
+        :ok
 
       Orian.URI.objectstore?(u) ->
-        case Orian.S3.Object.get_object(u.bucket, u.key, s3_from(kw, u)) do
-          {:ok, body} -> IO.binwrite(:stdio, body)
-          {:error, e} -> Mix.shell().error(inspect(e))
+        case Orian.S3.Object.get_object(u.bucket, u.key, kw) do
+          {:ok, body} ->
+            IO.binwrite(:stdio, body)
+            :ok
+
+          {:error, e} ->
+            err(inspect(e))
+            {:error, e}
         end
     end
   end
@@ -96,38 +125,38 @@ defmodule Orian.CLI do
       file
       |> File.read!()
       |> String.split("\n", trim: true)
-      |> Enum.reject(&String.starts_with?(&1, "#"))
+      |> Enum.reject(&(String.starts_with?(&1, "#") or String.trim(&1) == ""))
 
-    workers = Keyword.get(kw, :numworkers, 32)
+    workers = Keyword.get(kw, :numworkers, Orian.Perf.numworkers())
 
     results =
       lines
       |> Task.async_stream(
         fn line ->
           argv = OptionParser.split(line)
-          main(argv)
+          main(argv, halt: false)
         end,
         max_concurrency: workers,
         timeout: :infinity
       )
       |> Enum.to_list()
 
-    Mix.shell().info("run #{length(results)} commands")
+    info("run #{length(results)} commands")
     :ok
   end
 
   defp dispatch(_, _) do
-    Mix.shell().info(@help)
+    info(@help)
     :ok
   end
 
   defp print_stats({:ok, %{dry_run: true, jobs: jobs}}) do
-    Enum.each(jobs, fn j -> Mix.shell().info("dry #{j.src.raw} -> #{j.dst.raw}") end)
+    Enum.each(jobs, fn j -> info("dry #{j.src.raw} -> #{j.dst.raw}") end)
     :ok
   end
 
   defp print_stats({:ok, %{ok: ok, error: err}}) do
-    Mix.shell().info("ok=#{ok} error=#{err}")
+    info("ok=#{ok} error=#{err}")
     if err > 0, do: {:error, err}, else: :ok
   end
 
@@ -143,7 +172,7 @@ defmodule Orian.CLI do
       region: opts[:region],
       unsigned: opts[:unsigned] || false,
       dry_run: opts[:dry_run] || false,
-      blake3: Keyword.get(opts, :blake3, true)
+      blake3: opts[:blake3] || false
     ]
     |> Enum.reject(fn {_, v} -> is_nil(v) end)
   end
@@ -154,5 +183,17 @@ defmodule Orian.CLI do
     if uri.port, do: "#{h}:#{uri.port}", else: h
   end
 
-  defp s3_from(kw, _u), do: kw
+  defp info(msg), do: IO.puts(msg)
+  defp err(msg), do: IO.puts(:stderr, msg)
+
+  defp mix? do
+    Code.ensure_loaded?(Mix.Project) and function_exported?(Mix.Project, :get, 0)
+  rescue
+    _ -> false
+  end
+
+  defp finish(:ok, false), do: :ok
+  defp finish({:error, _} = e, false), do: e
+  defp finish(:ok, true), do: System.halt(0)
+  defp finish(_, true), do: System.halt(1)
 end

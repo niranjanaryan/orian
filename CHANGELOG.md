@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Standalone `orian` CLI (`mix orian.install` → `~/.local/bin/orian`)
 - Rust/Tokio streaming engine (`bulk`/`put_file`/`get_file`/`pipe`) — bytes skip the BEAM
 - Throughput defaults: dirty-CPU NIFs, httpc keep-alive pool, parallel range GET, 16 MiB parts
 - s5cmd/Skyplane-class `Orian.Transfer` + `mix orian` (`cp`, `sync`, `ls`, `rm`, `cat`, `run`)
