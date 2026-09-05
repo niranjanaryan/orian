@@ -1,6 +1,6 @@
 # BLAKE3 vs XXH3
 
-Stow is the hash + blob package for Gale / Ingot / Dusk.
+Orian is the hash + blob package for Gale / Ingot / Dusk.
 
 | Hash | Crypto | Use |
 | --- | --- | --- |

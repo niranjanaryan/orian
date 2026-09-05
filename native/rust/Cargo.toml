@@ -1,10 +1,10 @@
 [package]
-name = "stow_nif"
+name = "orian_nif"
 version = "0.1.0"
 edition = "2021"
 
 [lib]
-name = "stow_nif"
+name = "orian_nif"
 crate-type = ["cdylib"]
 
 [dependencies]

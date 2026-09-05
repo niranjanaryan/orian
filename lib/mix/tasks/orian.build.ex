@@ -1,15 +1,15 @@
-defmodule Mix.Tasks.Stow.Build do
+defmodule Mix.Tasks.Orian.Build do
   @moduledoc false
   use Mix.Task
-  @shortdoc "Builds the Stow Zig NIF"
+  @shortdoc "Builds the Orian Zig NIF"
   @recursive true
 
   @impl Mix.Task
   def run(_args) do
     app_path = Mix.Project.app_path()
     File.mkdir_p!(Path.join(app_path, "priv"))
-    so = Path.join(app_path, "priv/stow_nif.so")
-    src = "native/zig/stow_nif.zig"
+    so = Path.join(app_path, "priv/orian_nif.so")
+    src = "native/zig/orian_nif.zig"
     ok = match?({:ok, %{size: s}} when s > 1024, File.stat(so))
 
     unless ok do
@@ -19,7 +19,7 @@ defmodule Mix.Tasks.Stow.Build do
     need = not ok or (File.exists?(src) and newer?(src, so))
 
     if need do
-      Mix.shell().info("Compiling Stow Zig NIF...")
+      Mix.shell().info("Compiling Orian Zig NIF...")
       erts = System.get_env("ERTS_INCLUDE_DIR") || find_erts()
 
       {out, e} =
@@ -28,11 +28,11 @@ defmodule Mix.Tasks.Stow.Build do
         )
 
       IO.write(out)
-      if e != 0, do: raise("Stow NIF compile failed")
+      if e != 0, do: raise("Orian NIF compile failed")
 
       case File.stat(so) do
         {:ok, %{size: s}} when s > 1024 -> :ok
-        other -> raise("Stow Zig NIF missing or empty: #{inspect(other)}")
+        other -> raise("Orian Zig NIF missing or empty: #{inspect(other)}")
       end
     end
   end

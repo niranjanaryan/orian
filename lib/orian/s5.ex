@@ -1,15 +1,15 @@
-defmodule Stow.S5 do
+defmodule Orian.S5 do
   @moduledoc """
   S5 blob client. Content-addressed with BLAKE3; HTTP to an S5 node.
 
-      Stow.S5.put(data, endpoint: "http://127.0.0.1:5050")
-      Stow.S5.get(cid, endpoint: "http://127.0.0.1:5050")
+      Orian.S5.put(data, endpoint: "http://127.0.0.1:5050")
+      Orian.S5.get(cid, endpoint: "http://127.0.0.1:5050")
   """
 
-  alias Stow.CID
+  alias Orian.CID
 
   def cid(data) when is_binary(data) do
-    %CID{hash: Stow.blake3(data), size: byte_size(data), algo: :blake3}
+    %CID{hash: Orian.blake3(data), size: byte_size(data), algo: :blake3}
   end
 
   def put(data, opts) when is_binary(data) do
@@ -35,7 +35,7 @@ defmodule Stow.S5 do
     case :httpc.request(:get, {String.to_charlist(url), []}, http_opts(opts), []) do
       {:ok, {{_, 200, _}, _, body}} ->
         bin = IO.iodata_to_binary(body)
-        Stow.verify(bin, cid)
+        Orian.verify(bin, cid)
 
       {:ok, {{_, code, _}, _, body}} ->
         {:error, {code, body}}

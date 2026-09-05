@@ -1,4 +1,4 @@
-# Orian / Stow hash + store bench
+# Orian / Orian hash + store bench
 
 Machine: unix darwin OTP 29 aarch64-apple-darwin
 Date: 2026-09-06

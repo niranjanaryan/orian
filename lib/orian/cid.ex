@@ -1,11 +1,11 @@
-defmodule Stow.CID do
+defmodule Orian.CID do
   @moduledoc """
   S5-style blob CID: `0x5b 0x82 0x1e` + BLAKE3-256 + unsigned LEB128 size.
   """
   defstruct [:hash, :size, algo: :blake3]
 
   def of(data) when is_binary(data) do
-    %__MODULE__{hash: Stow.blake3(data), size: byte_size(data), algo: :blake3}
+    %__MODULE__{hash: Orian.blake3(data), size: byte_size(data), algo: :blake3}
   end
 
   def encode(%__MODULE__{hash: hash, size: size}) when byte_size(hash) == 32 do

@@ -1,4 +1,4 @@
-defmodule Stow.S3 do
+defmodule Orian.S3 do
   @moduledoc """
   S3 PUT/GET with optional AWS SigV4. BLAKE3 stored as `x-amz-meta-blake3`.
 
@@ -6,10 +6,10 @@ defmodule Stow.S3 do
   on location-addressed S3).
   """
 
-  alias Stow.CID
+  alias Orian.CID
 
   def put(data, opts) when is_binary(data) do
-    cid = Keyword.get_lazy(opts, :cid, fn -> Stow.S5.cid(data) end)
+    cid = Keyword.get_lazy(opts, :cid, fn -> Orian.S5.cid(data) end)
     key = Keyword.get(opts, :key, CID.hex(cid))
     bucket = Keyword.fetch!(opts, :bucket)
     host = Keyword.get(opts, :host) || "#{bucket}.s3.amazonaws.com"
@@ -21,7 +21,7 @@ defmodule Stow.S3 do
     headers0 = [
       {"host", host},
       {"x-amz-meta-blake3", blake_hex},
-      {"x-amz-meta-xxh3", Integer.to_string(Stow.xxh3(data))},
+      {"x-amz-meta-xxh3", Integer.to_string(Orian.xxh3(data))},
       {"content-type", Keyword.get(opts, :content_type, "application/octet-stream")}
     ]
 
@@ -51,7 +51,7 @@ defmodule Stow.S3 do
            []
          ) do
       {:ok, {{_, 200, _}, _, body}} ->
-        Stow.verify(IO.iodata_to_binary(body), cid)
+        Orian.verify(IO.iodata_to_binary(body), cid)
 
       {:ok, {{_, code, _}, _, body}} ->
         {:error, {code, body}}

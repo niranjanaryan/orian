@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Renamed package **stow → orian**
 - `mix bench` writes `benchmark/RESULTS.md` (Zig vs Rust vs OTP)
 
 ## 0.1.0

@@ -1,12 +1,12 @@
-defmodule Stow.MixProject do
+defmodule Orian.MixProject do
   use Mix.Project
 
   @version "0.1.0"
-  @source_url "https://github.com/niranjanaryan/stow"
+  @source_url "https://github.com/niranjanaryan/orian"
 
   def project do
     [
-      app: :stow,
+      app: :orian,
       version: @version,
       elixir: "~> 1.17",
       start_permanent: Mix.env() == :prod,
@@ -16,15 +16,15 @@ defmodule Stow.MixProject do
       package: package(),
       description: description(),
       source_url: @source_url,
-      homepage_url: "https://hex.pm/packages/stow",
-      name: "Stow"
+      homepage_url: "https://hex.pm/packages/orian",
+      name: "Orian"
     ]
   end
 
   def application do
     [
       extra_applications: [:logger, :crypto, :inets, :ssl, :public_key],
-      mod: {Stow.Application, []}
+      mod: {Orian.Application, []}
     ]
   end
 
@@ -38,8 +38,8 @@ defmodule Stow.MixProject do
 
   defp aliases do
     [
-      test: ["stow.build", "test"],
-      bench: ["stow.build", "stow.bench"]
+      test: ["orian.build", "test"],
+      bench: ["orian.build", "orian.bench"]
     ]
   end
 
@@ -49,7 +49,7 @@ defmodule Stow.MixProject do
 
   defp docs do
     [
-      main: "Stow",
+      main: "Orian",
       extras: ["README.md", "LICENSE", "CHANGELOG.md", "HASH.md", "benchmark/RESULTS.md"]
     ]
   end

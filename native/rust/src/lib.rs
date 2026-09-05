@@ -13,4 +13,4 @@ fn xxh3(data: Binary) -> u64 {
     xxhash_rust::xxh3::xxh3_64(data.as_slice())
 }
 
-rustler::init!("Elixir.Stow.Rs");
+rustler::init!("Elixir.Orian.Rs");

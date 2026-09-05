@@ -1,12 +1,12 @@
-defmodule Stow.Native do
+defmodule Orian.Native do
   @moduledoc "Zig NIF: BLAKE3, XXH3, FNV-1a hash64."
   @on_load :load_nif
 
   def load_nif do
     path =
-      case :code.priv_dir(:stow) do
-        {:error, _} -> Path.expand("../../priv/stow_nif", __DIR__)
-        dir -> Path.join(dir, "stow_nif")
+      case :code.priv_dir(:orian) do
+        {:error, _} -> Path.expand("../../priv/orian_nif", __DIR__)
+        dir -> Path.join(dir, "orian_nif")
       end
 
     :erlang.load_nif(String.to_charlist(path), 0)

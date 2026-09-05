@@ -1,4 +1,4 @@
-defmodule Mix.Tasks.Stow.Bench do
+defmodule Mix.Tasks.Orian.Bench do
   @moduledoc false
   use Mix.Task
   @shortdoc "BLAKE3 / XXH3 / store throughput (Zig vs Rust vs OTP)"
@@ -7,15 +7,15 @@ defmodule Mix.Tasks.Stow.Bench do
   def run(_args) do
     Mix.Task.run("app.start")
 
-    unless Stow.nif_loaded?() do
-      Mix.raise("Zig NIF not loaded; mix stow.build first")
+    unless Orian.nif_loaded?() do
+      Mix.raise("Zig NIF not loaded; mix orian.build first")
     end
 
-    rust? = Stow.rust_loaded?()
+    rust? = Orian.rust_loaded?()
     {os, otp} = :os.type()
 
     header = [
-      "# Orian / Stow hash + store bench",
+      "# Orian / Orian hash + store bench",
       "",
       "Machine: #{os} #{otp} OTP #{:erlang.system_info(:otp_release)} #{:erlang.system_info(:system_architecture)}",
       "Date: #{Date.utc_today()}",
@@ -38,10 +38,10 @@ defmodule Mix.Tasks.Stow.Bench do
     hash_rows =
       Enum.map(sizes, fn {size, n} ->
         payload = :crypto.strong_rand_bytes(size)
-        zb = mibs(size, n, fn -> Stow.blake3(payload) end)
-        rb = if rust?, do: mibs(size, n, fn -> Stow.Rs.blake3(payload) end), else: nil
-        zx = mibs(size, n, fn -> Stow.xxh3(payload) end)
-        rx = if rust?, do: mibs(size, n, fn -> Stow.Rs.xxh3(payload) end), else: nil
+        zb = mibs(size, n, fn -> Orian.blake3(payload) end)
+        rb = if rust?, do: mibs(size, n, fn -> Orian.Rs.blake3(payload) end), else: nil
+        zx = mibs(size, n, fn -> Orian.xxh3(payload) end)
+        rx = if rust?, do: mibs(size, n, fn -> Orian.Rs.xxh3(payload) end), else: nil
         sh = mibs(size, n, fn -> :crypto.hash(:sha256, payload) end)
 
         Mix.shell().info(
@@ -53,9 +53,9 @@ defmodule Mix.Tasks.Stow.Bench do
 
     blob = :crypto.strong_rand_bytes(1_048_576)
     n_store = 64
-    put_us = time(n_store, fn -> {:ok, _} = Stow.put(blob) end)
-    {:ok, cid} = Stow.put(blob)
-    get_us = time(n_store, fn -> {:ok, _} = Stow.get(cid) end)
+    put_us = time(n_store, fn -> {:ok, _} = Orian.put(blob) end)
+    {:ok, cid} = Orian.put(blob)
+    get_us = time(n_store, fn -> {:ok, _} = Orian.get(cid) end)
     put_m = mibs_from_us(1_048_576, n_store, put_us)
     get_m = mibs_from_us(1_048_576, n_store, get_us)
 
@@ -67,8 +67,8 @@ defmodule Mix.Tasks.Stow.Bench do
       if rust? do
         sample = "orian bench"
 
-        Stow.blake3(sample) == Stow.Rs.blake3(sample) and
-          Stow.xxh3(sample) == Stow.Rs.xxh3(sample)
+        Orian.blake3(sample) == Orian.Rs.blake3(sample) and
+          Orian.xxh3(sample) == Orian.Rs.xxh3(sample)
       else
         false
       end

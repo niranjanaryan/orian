@@ -1,4 +1,4 @@
-//! Stow Zig NIF: BLAKE3 identity, XXH3 checksum, FNV-1a hash64.
+//! Orian Zig NIF: BLAKE3 identity, XXH3 checksum, FNV-1a hash64.
 
 const std = @import("std");
 const erl_nif = @cImport({
@@ -66,7 +66,7 @@ var nif_funcs = [_]erl_nif.ErlNifFunc{
 var nif_entry = erl_nif.ErlNifEntry{
     .major = erl_nif.ERL_NIF_MAJOR_VERSION,
     .minor = erl_nif.ERL_NIF_MINOR_VERSION,
-    .name = @as([*]const u8, @ptrCast("Elixir.Stow.Native")),
+    .name = @as([*]const u8, @ptrCast("Elixir.Orian.Native")),
     .num_of_funcs = nif_funcs.len,
     .funcs = @as([*]erl_nif.ErlNifFunc, &nif_funcs),
     .load = null,
