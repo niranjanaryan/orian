@@ -41,7 +41,8 @@ defmodule Orian do
   def backends do
     %{
       zig_nif: nif_loaded?(),
-      rust_nif: rust_loaded?()
+      rust_nif: rust_loaded?(),
+      engine: Orian.Engine.loaded?()
     }
   end
 

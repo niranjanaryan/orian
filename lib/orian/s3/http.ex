@@ -1,18 +1,26 @@
 defmodule Orian.S3.HTTP do
   @moduledoc false
 
-  def request(method, url, path, body, headers0, opts) do
+  def prepare(method, url, path, headers0, opts) do
     host = Keyword.fetch!(opts, :host)
     region = Keyword.get(opts, :region, "us-east-1")
     query = Keyword.get(opts, :query, "")
-    timeout = Keyword.get(opts, :timeout, 120_000)
-    body = body || ""
+    payload_hash = Keyword.get(opts, :payload_hash, :sha256)
+    body = Keyword.get(opts, :body, "")
 
     headers =
       [{"host", host} | headers0]
-      |> maybe_sign(opts, method, path, query, body, region)
+      |> maybe_sign(opts, method, path, query, body, region, payload_hash)
 
     url = if query == "", do: url, else: url <> "?" <> query
+    {url, headers}
+  end
+
+  def request(method, url, path, body, headers0, opts) do
+    {url, headers} =
+      prepare(method, url, path, headers0, Keyword.put(opts, :body, body || ""))
+
+    timeout = Keyword.get(opts, :timeout, 120_000)
     http_opts = [timeout: timeout, version: ~c"HTTP/1.1"] ++ ssl_opts(opts)
 
     case do_req(method, url, headers, body, http_opts) do
@@ -60,7 +68,7 @@ defmodule Orian.S3.HTTP do
     end
   end
 
-  defp maybe_sign(headers, opts, method, path, query, body, region) do
+  defp maybe_sign(headers, opts, method, path, query, body, region, payload_hash) do
     if Keyword.get(opts, :unsigned, false) do
       headers
     else
@@ -75,7 +83,8 @@ defmodule Orian.S3.HTTP do
             region,
             ak,
             sk,
-            Keyword.get(opts, :session_token)
+            Keyword.get(opts, :session_token),
+            payload_hash
           )
 
         _ ->
@@ -84,11 +93,17 @@ defmodule Orian.S3.HTTP do
     end
   end
 
-  defp sign(method, path, query, headers, payload, region, ak, sk, token) do
+  defp sign(method, path, query, headers, payload, region, ak, sk, token, payload_hash) do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
     amz_date = Calendar.strftime(now, "%Y%m%dT%H%M%SZ")
     datestamp = Calendar.strftime(now, "%Y%m%d")
-    payload_hash = sha256_hex(payload)
+
+    payload_hash =
+      case payload_hash do
+        :unsigned -> "UNSIGNED-PAYLOAD"
+        :sha256 -> sha256_hex(payload)
+        bin when is_binary(bin) -> bin
+      end
 
     headers =
       headers

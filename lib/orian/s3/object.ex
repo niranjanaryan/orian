@@ -59,31 +59,39 @@ defmodule Orian.S3.Object do
   end
 
   def put_file(bucket, key, path, opts) do
-    part_size = Keyword.get(opts, :part_size, Orian.Perf.part_size())
-    conc = Keyword.get(opts, :concurrency, Orian.Perf.concurrency())
-    {:ok, %{size: size}} = File.stat(path)
-
-    if size <= part_size do
-      put_object(bucket, key, File.read!(path), opts)
+    if Orian.Engine.loaded?() do
+      Orian.Engine.put_file(bucket, key, path, opts)
     else
-      multipart_file(bucket, key, path, size, part_size, conc, opts)
+      part_size = Keyword.get(opts, :part_size, Orian.Perf.part_size())
+      conc = Keyword.get(opts, :concurrency, Orian.Perf.concurrency())
+      {:ok, %{size: size}} = File.stat(path)
+
+      if size <= part_size do
+        put_object(bucket, key, File.read!(path), opts)
+      else
+        multipart_file(bucket, key, path, size, part_size, conc, opts)
+      end
     end
   end
 
   def get_file(bucket, key, dest, opts) do
-    part_size = Keyword.get(opts, :part_size, Orian.Perf.part_size())
-    conc = Keyword.get(opts, :concurrency, Orian.Perf.concurrency())
-    File.mkdir_p!(Path.dirname(dest))
+    if Orian.Engine.loaded?() do
+      Orian.Engine.get_file(bucket, key, dest, opts)
+    else
+      part_size = Keyword.get(opts, :part_size, Orian.Perf.part_size())
+      conc = Keyword.get(opts, :concurrency, Orian.Perf.concurrency())
+      File.mkdir_p!(Path.dirname(dest))
 
-    case head_object(bucket, key, opts) do
-      {:ok, %{size: size}} when size > part_size ->
-        range_get_file(bucket, key, dest, size, part_size, conc, opts)
+      case head_object(bucket, key, opts) do
+        {:ok, %{size: size}} when size > part_size ->
+          range_get_file(bucket, key, dest, size, part_size, conc, opts)
 
-      _ ->
-        case get_object(bucket, key, opts) do
-          {:ok, body} -> File.write(dest, body)
-          other -> other
-        end
+        _ ->
+          case get_object(bucket, key, opts) do
+            {:ok, body} -> File.write(dest, body)
+            other -> other
+          end
+      end
     end
   end
 

@@ -86,18 +86,11 @@ defmodule Orian.Transfer do
       {:ok, %{ok: 0, error: 0, jobs: jobs, dry_run: true}}
     else
       stats =
-        jobs
-        |> Task.async_stream(
-          fn job -> exec(job, opts) end,
-          max_concurrency: workers,
-          timeout: Keyword.get(opts, :timeout, 300_000),
-          ordered: false
-        )
-        |> Enum.reduce(%{ok: 0, error: 0, errors: []}, fn
-          {:ok, :ok}, acc -> %{acc | ok: acc.ok + 1}
-          {:ok, {:error, e}}, acc -> %{acc | error: acc.error + 1, errors: [e | acc.errors]}
-          {:exit, e}, acc -> %{acc | error: acc.error + 1, errors: [e | acc.errors]}
-        end)
+        if Orian.Engine.loaded?() do
+          run_engine(jobs, workers, opts)
+        else
+          run_beam(jobs, workers, opts)
+        end
 
       :telemetry.execute(
         [:orian, :transfer, :done],
@@ -107,6 +100,74 @@ defmodule Orian.Transfer do
 
       {:ok, stats}
     end
+  end
+
+  defp run_engine(jobs, workers, opts) do
+    {native, rest} = Enum.split_with(jobs, &native_job?/1)
+
+    native_jobs =
+      Enum.map(native, fn job -> encode_native(job, opts) end)
+      |> Enum.reject(&is_nil/1)
+
+    beam =
+      run_beam(
+        rest ++ Enum.filter(native, fn j -> is_nil(encode_native(j, opts)) end),
+        workers,
+        opts
+      )
+
+    eng =
+      if native_jobs == [] do
+        %{ok: 0, error: 0, errors: []}
+      else
+        case Orian.Engine.bulk(native_jobs, workers) do
+          {:ok, %{ok: ok, error: err}} -> %{ok: ok, error: err, errors: []}
+          {:error, e} -> %{ok: 0, error: length(native_jobs), errors: [e]}
+        end
+      end
+
+    %{
+      ok: beam.ok + eng.ok,
+      error: beam.error + eng.error,
+      errors: (beam[:errors] || []) ++ eng.errors
+    }
+  end
+
+  defp native_job?(%{src: src, dst: dst}) do
+    (Loc.local?(src) and Loc.objectstore?(dst)) or (Loc.objectstore?(src) and Loc.local?(dst))
+  end
+
+  defp native_job?(_), do: false
+
+  defp encode_native(%{src: src, dst: dst}, opts) do
+    cond do
+      Loc.local?(src) and Loc.objectstore?(dst) ->
+        Orian.Engine.encode_put(dst.bucket, dst.key, src.path, s3_opts(dst, opts))
+
+      Loc.objectstore?(src) and Loc.local?(dst) ->
+        File.mkdir_p!(Path.dirname(dst.path))
+        Orian.Engine.encode_get(src.bucket, src.key, dst.path, s3_opts(src, opts))
+
+      true ->
+        nil
+    end
+  rescue
+    _ -> nil
+  end
+
+  defp run_beam(jobs, workers, opts) do
+    jobs
+    |> Task.async_stream(
+      fn job -> exec(job, opts) end,
+      max_concurrency: max(workers, 1),
+      timeout: Keyword.get(opts, :timeout, 300_000),
+      ordered: false
+    )
+    |> Enum.reduce(%{ok: 0, error: 0, errors: []}, fn
+      {:ok, :ok}, acc -> %{acc | ok: acc.ok + 1}
+      {:ok, {:error, e}}, acc -> %{acc | error: acc.error + 1, errors: [e | acc.errors]}
+      {:exit, e}, acc -> %{acc | error: acc.error + 1, errors: [e | acc.errors]}
+    end)
   end
 
   defp exec(%{src: src, dst: dst}, opts) do
@@ -132,8 +193,19 @@ defmodule Orian.Transfer do
         if same_host? do
           Object.copy_object(src.bucket, src.key, dst.bucket, dst.key, s3_opts(dst, opts))
         else
-          with {:ok, body} <- Object.get_object(src.bucket, src.key, s3_opts(src, opts)) do
-            Object.put_object(dst.bucket, dst.key, body, s3_opts(dst, opts))
+          if Orian.Engine.loaded?() do
+            Orian.Engine.pipe(
+              src.bucket,
+              src.key,
+              dst.bucket,
+              dst.key,
+              s3_opts(src, opts),
+              s3_opts(dst, opts)
+            )
+          else
+            with {:ok, body} <- Object.get_object(src.bucket, src.key, s3_opts(src, opts)) do
+              Object.put_object(dst.bucket, dst.key, body, s3_opts(dst, opts))
+            end
           end
         end
 

@@ -1,4 +1,39 @@
-use rustler::{Binary, Env, NewBinary};
+mod engine;
+
+use rustler::{Atom, Binary, Env, NewBinary, NifResult};
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn bulk(
+    jobs: Vec<(String, String, String, Vec<(String, String)>)>,
+    concurrency: u32,
+) -> (Atom, u32, u32) {
+    engine::bulk(jobs, concurrency)
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn put_file(url: String, path: String, hdrs: Vec<(String, String)>) -> NifResult<Atom> {
+    engine::put_file(url, path, hdrs)
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn get_file(url: String, path: String, hdrs: Vec<(String, String)>) -> NifResult<Atom> {
+    engine::get_file(url, path, hdrs)
+}
+
+#[rustler::nif(schedule = "DirtyIo")]
+fn pipe(
+    src_url: String,
+    src_hdrs: Vec<(String, String)>,
+    dst_url: String,
+    dst_hdrs: Vec<(String, String)>,
+) -> NifResult<Atom> {
+    engine::pipe(src_url, src_hdrs, dst_url, dst_hdrs)
+}
+
+#[rustler::nif]
+fn engine_loaded() -> bool {
+    true
+}
 
 #[rustler::nif(schedule = "DirtyCpu")]
 fn blake3<'a>(env: Env<'a>, data: Binary<'a>) -> Binary<'a> {

@@ -1,6 +1,14 @@
 # Performance
 
-High throughput is a primary goal (s5cmd / Skyplane class).
+High throughput is a **primary goal**. Target: **50–100×** versus copying whole objects through the BEAM (`:httpc` + Elixir binaries).
+
+## How
+
+The hot path is a **Rust/Tokio engine** (`Orian.Engine`): streaming file→socket and socket→file, HTTP/1.1 keep-alive pool (256 idle/host), `UNSIGNED-PAYLOAD` SigV4 so Elixir never hashes or buffers the body. One dirty-IO NIF runs a whole batch (`bulk/2`).
+
+BEAM `:httpc` remains a fallback if the NIF is missing.
+
+50–100× is vs the old whole-file-through-the-VM path on many objects / large objects. It will not beat physics on a 1 Gbps NIC (max ~125 MiB/s). On 10–100 Gbps or localhost S3 (MinIO), native streaming is the difference between tens of MiB/s and multi-GiB/s.
 
 ## Defaults
 

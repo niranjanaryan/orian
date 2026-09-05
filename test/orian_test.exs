@@ -88,4 +88,9 @@ defmodule OrianTest do
   test "CLI help" do
     assert :ok = Orian.CLI.main(["--help"])
   end
+
+  test "Rust transfer engine is loaded" do
+    assert Orian.Engine.loaded?()
+    assert {:ok, 0, 0} = Orian.Rs.bulk([], 8)
+  end
 end
