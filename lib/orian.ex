@@ -22,8 +22,14 @@ defmodule Orian do
   defdelegate cp(src, dst, opts \\ []), to: Orian.Transfer
   defdelegate sync(src, dst, opts \\ []), to: Orian.Transfer
 
-  def blake3(bin) when is_binary(bin), do: Orian.Native.blake3(bin)
-  def xxh3(bin) when is_binary(bin), do: Orian.Native.xxh3(bin)
+  def blake3(bin) when is_binary(bin) do
+    if rust_loaded?(), do: Orian.Rs.blake3(bin), else: Orian.Native.blake3(bin)
+  end
+
+  def xxh3(bin) when is_binary(bin) do
+    if rust_loaded?(), do: Orian.Rs.xxh3(bin), else: Orian.Native.xxh3(bin)
+  end
+
   def hash64(bin) when is_binary(bin), do: Orian.Native.hash64(bin)
 
   def nif_loaded? do
@@ -40,6 +46,18 @@ defmodule Orian do
   end
 
   def rust_loaded? do
+    case :persistent_term.get({__MODULE__, :rust_nif}, :unknown) do
+      :unknown ->
+        v = rust_probe()
+        :persistent_term.put({__MODULE__, :rust_nif}, v)
+        v
+
+      v ->
+        v
+    end
+  end
+
+  defp rust_probe do
     match?(<<_::binary-size(32)>>, Orian.Rs.blake3("a"))
   rescue
     _ -> false

@@ -16,9 +16,9 @@ defmodule Orian.CLI do
   SRC/DST: local path, glob, s3://bucket/key, gs://bucket/key
 
   Flags:
-    --numworkers N     parallel objects (default: schedulers*4)
-    --concurrency N    parallel parts per object (default 8)
-    --part-size MiB    multipart part size (default 8)
+    --numworkers N     parallel objects (default: max(32, schedulers*8))
+    --concurrency N    parallel parts per object (default 16)
+    --part-size MiB    multipart / range size (default 16)
     --endpoint-url URL S3-compatible endpoint
     --region R
     --unsigned

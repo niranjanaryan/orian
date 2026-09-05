@@ -31,6 +31,8 @@ Orian.Transfer.cp("data/*", "s3://bucket/", numworkers: 64, concurrency: 8)
 | BLAKE3 / S5 CID | no | no | yes (Zig + Rust NIF) |
 | S3-compatible / MinIO / `gs://` XML | yes | AWS/GCP/Azure | S3 XML + endpoint-url |
 
+High throughput is a primary goal. Dirty-CPU NIFs, HTTP keep-alive (512 sessions), 16 MiB parts, parallel range GET, Rust BLAKE3 on the hash path. See [PERFORMANCE.md](PERFORMANCE.md).
+
 Tune like s5cmd: many small files → high `numworkers`; few large files → high `concurrency`.
 
 Env: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_ENDPOINT_URL`.

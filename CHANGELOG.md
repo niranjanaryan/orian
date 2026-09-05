@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Throughput defaults: dirty-CPU NIFs, httpc keep-alive pool, parallel range GET, 16 MiB parts
 - s5cmd/Skyplane-class `Orian.Transfer` + `mix orian` (`cp`, `sync`, `ls`, `rm`, `cat`, `run`)
 - Parallel workers, multipart PUT, S3 CopyObject / streamed S3↔S3
 - Renamed package **stow → orian**

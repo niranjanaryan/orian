@@ -21,8 +21,8 @@ defmodule OrianTest do
       end
 
     assert is_binary(result) and byte_size(result) == 32, inspect(result)
-    assert result == Orian.blake3("hello")
-    assert Orian.Rs.xxh3("hello") == Orian.xxh3("hello")
+    assert result == Orian.Native.blake3("hello")
+    assert Orian.Rs.xxh3("hello") == Orian.Native.xxh3("hello")
   end
 
   test "memory put/get and S5 CID round-trip" do

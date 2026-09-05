@@ -59,8 +59,8 @@ defmodule Orian.S3.Object do
   end
 
   def put_file(bucket, key, path, opts) do
-    part_size = Keyword.get(opts, :part_size, 8 * 1024 * 1024)
-    conc = Keyword.get(opts, :concurrency, 8)
+    part_size = Keyword.get(opts, :part_size, Orian.Perf.part_size())
+    conc = Keyword.get(opts, :concurrency, Orian.Perf.concurrency())
     {:ok, %{size: size}} = File.stat(path)
 
     if size <= part_size do
@@ -71,14 +71,34 @@ defmodule Orian.S3.Object do
   end
 
   def get_file(bucket, key, dest, opts) do
-    case get_object(bucket, key, opts) do
-      {:ok, body} ->
-        File.mkdir_p!(Path.dirname(dest))
-        File.write!(dest, body)
-        :ok
+    part_size = Keyword.get(opts, :part_size, Orian.Perf.part_size())
+    conc = Keyword.get(opts, :concurrency, Orian.Perf.concurrency())
+    File.mkdir_p!(Path.dirname(dest))
 
-      other ->
-        other
+    case head_object(bucket, key, opts) do
+      {:ok, %{size: size}} when size > part_size ->
+        range_get_file(bucket, key, dest, size, part_size, conc, opts)
+
+      _ ->
+        case get_object(bucket, key, opts) do
+          {:ok, body} -> File.write(dest, body)
+          other -> other
+        end
+    end
+  end
+
+  def head_object(bucket, key, opts) do
+    {url, path} = target(opts, bucket, key)
+
+    case HTTP.request(:head, url, path, "", [], opts) do
+      {:ok, code, headers, _} when code in 200..299 ->
+        {:ok, %{size: content_length(headers)}}
+
+      {:ok, code, _, body} ->
+        {:error, {code, body}}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -112,6 +132,46 @@ defmodule Orian.S3.Object do
     end
   end
 
+  defp range_get_file(bucket, key, dest, size, part_size, conc, opts) do
+    {:ok, seed} = File.open(dest, [:write, :raw, :binary])
+    if size > 0, do: :file.pwrite(seed, size - 1, <<0>>)
+    File.close(seed)
+    dest_c = String.to_charlist(dest)
+    parts = chunk_offsets(size, part_size)
+
+    results =
+      parts
+      |> Task.async_stream(
+        fn {n, off, len} ->
+          to = off + len - 1
+
+          case get_object(bucket, key, Keyword.put(opts, :range, {off, to})) do
+            {:ok, data} ->
+              {:ok, fd} = :file.open(dest_c, [:read, :write, :raw, :binary])
+              :ok = :file.pwrite(fd, off, data)
+              :file.close(fd)
+              {n, :ok}
+
+            {:error, e} ->
+              {n, {:error, e}}
+          end
+        end,
+        max_concurrency: conc,
+        timeout: Keyword.get(opts, :timeout, 300_000)
+      )
+      |> Enum.to_list()
+
+    if Enum.any?(results, fn
+         {:ok, {_, {:error, _}}} -> true
+         {:exit, _} -> true
+         _ -> false
+       end) do
+      {:error, :range_get}
+    else
+      :ok
+    end
+  end
+
   defp multipart_file(bucket, key, path, size, part_size, conc, opts) do
     with {:ok, upload_id} <- initiate_multipart(bucket, key, opts) do
       parts = chunk_offsets(size, part_size)
@@ -120,9 +180,9 @@ defmodule Orian.S3.Object do
         parts
         |> Task.async_stream(
           fn {n, off, len} ->
-            {:ok, fd} = File.open(path, [:read, :raw, :binary])
+            {:ok, fd} = :file.open(String.to_charlist(path), [:read, :raw, :binary])
             {:ok, data} = :file.pread(fd, off, len)
-            File.close(fd)
+            :file.close(fd)
             {n, upload_part(bucket, key, upload_id, n, data, opts)}
           end,
           max_concurrency: conc,
@@ -209,6 +269,14 @@ defmodule Orian.S3.Object do
       len = min(part_size, size - off)
       {i + 1, off, len}
     end
+  end
+
+  defp content_length(headers) do
+    Enum.find_value(headers, 0, fn {k, v} ->
+      if String.downcase(k) == "content-length" do
+        String.to_integer(String.trim(v))
+      end
+    end)
   end
 
   defp maybe_meta(headers, body, opts) do

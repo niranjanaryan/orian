@@ -13,7 +13,7 @@ defmodule Orian.S3.HTTP do
       |> maybe_sign(opts, method, path, query, body, region)
 
     url = if query == "", do: url, else: url <> "?" <> query
-    http_opts = [timeout: timeout] ++ ssl_opts(opts)
+    http_opts = [timeout: timeout, version: ~c"HTTP/1.1"] ++ ssl_opts(opts)
 
     case do_req(method, url, headers, body, http_opts) do
       {:ok, {{_, code, _}, resp_headers, resp_body}} ->
@@ -25,15 +25,15 @@ defmodule Orian.S3.HTTP do
   end
 
   defp do_req(:get, url, headers, _body, http_opts) do
-    :httpc.request(:get, {String.to_charlist(url), encode_headers(headers)}, http_opts, [])
+    httpc(:get, {String.to_charlist(url), encode_headers(headers)}, http_opts)
   end
 
   defp do_req(:head, url, headers, _body, http_opts) do
-    :httpc.request(:head, {String.to_charlist(url), encode_headers(headers)}, http_opts, [])
+    httpc(:head, {String.to_charlist(url), encode_headers(headers)}, http_opts)
   end
 
   defp do_req(:delete, url, headers, _body, http_opts) do
-    :httpc.request(:delete, {String.to_charlist(url), encode_headers(headers)}, http_opts, [])
+    httpc(:delete, {String.to_charlist(url), encode_headers(headers)}, http_opts)
   end
 
   defp do_req(method, url, headers, body, http_opts) when method in [:put, :post] do
@@ -42,12 +42,22 @@ defmodule Orian.S3.HTTP do
         if String.downcase(k) == "content-type", do: String.to_charlist(v)
       end)
 
-    :httpc.request(
+    httpc(
       method,
       {String.to_charlist(url), encode_headers(headers), ctype, body},
-      http_opts,
-      []
+      http_opts
     )
+  end
+
+  defp httpc(method, request, http_opts) do
+    profile = Orian.Perf.http_profile()
+    opts = [body_format: :binary, full_result: true]
+
+    try do
+      :httpc.request(method, request, http_opts, opts, profile)
+    catch
+      :error, :noproc -> :httpc.request(method, request, http_opts, opts)
+    end
   end
 
   defp maybe_sign(headers, opts, method, path, query, body, region) do

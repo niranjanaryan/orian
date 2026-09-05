@@ -79,7 +79,7 @@ defmodule Orian.Transfer do
   end
 
   defp run_jobs(jobs, opts) do
-    workers = Keyword.get(opts, :numworkers, max(8, System.schedulers_online() * 4))
+    workers = Keyword.get(opts, :numworkers, Orian.Perf.numworkers())
     dry? = Keyword.get(opts, :dry_run, false)
 
     if dry? do
@@ -113,7 +113,12 @@ defmodule Orian.Transfer do
     cond do
       Loc.local?(src) and Loc.local?(dst) ->
         File.mkdir_p!(Path.dirname(dst.path))
-        File.cp(src.path, dst.path)
+
+        :file.copy(String.to_charlist(src.path), String.to_charlist(dst.path))
+        |> case do
+          {:ok, _} -> :ok
+          {:error, e} -> {:error, e}
+        end
 
       Loc.local?(src) and Loc.objectstore?(dst) ->
         Object.put_file(dst.bucket, dst.key, src.path, s3_opts(dst, opts))
@@ -243,11 +248,11 @@ defmodule Orian.Transfer do
       secret_access_key:
         Keyword.get(opts, :secret_access_key, System.get_env("AWS_SECRET_ACCESS_KEY")),
       session_token: Keyword.get(opts, :session_token, System.get_env("AWS_SESSION_TOKEN")),
-      concurrency: Keyword.get(opts, :concurrency, 8),
-      part_size: Keyword.get(opts, :part_size, 8 * 1024 * 1024),
+      concurrency: Keyword.get(opts, :concurrency, Orian.Perf.concurrency()),
+      part_size: Keyword.get(opts, :part_size, Orian.Perf.part_size()),
       timeout: Keyword.get(opts, :timeout, 300_000),
       insecure: Keyword.get(opts, :insecure, false),
-      blake3: Keyword.get(opts, :blake3, true)
+      blake3: Keyword.get(opts, :blake3, false)
     ]
   end
 

@@ -57,9 +57,11 @@ export fn nif_hash64(env: *erl_nif.ErlNifEnv, argc: c_int, argv: [*]const erl_ni
     return erl_nif.enif_make_uint64(env, fnv1a(data));
 }
 
+const dirty_cpu: c_uint = erl_nif.ERL_NIF_DIRTY_JOB_CPU_BOUND;
+
 var nif_funcs = [_]erl_nif.ErlNifFunc{
-    .{ .name = @as([*]const u8, @ptrCast("blake3")), .arity = 1, .fptr = @ptrCast(&nif_blake3), .flags = 0 },
-    .{ .name = @as([*]const u8, @ptrCast("xxh3")), .arity = 1, .fptr = @ptrCast(&nif_xxh3), .flags = 0 },
+    .{ .name = @as([*]const u8, @ptrCast("blake3")), .arity = 1, .fptr = @ptrCast(&nif_blake3), .flags = dirty_cpu },
+    .{ .name = @as([*]const u8, @ptrCast("xxh3")), .arity = 1, .fptr = @ptrCast(&nif_xxh3), .flags = dirty_cpu },
     .{ .name = @as([*]const u8, @ptrCast("hash64")), .arity = 1, .fptr = @ptrCast(&nif_hash64), .flags = 0 },
 };
 

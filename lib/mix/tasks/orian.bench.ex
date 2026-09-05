@@ -87,6 +87,10 @@ defmodule Mix.Tasks.Orian.Bench do
       "Zig BLAKE3 == Rust BLAKE3 (and XXH3): **#{agree}**.",
       "",
       "BLAKE3 is the content id. XXH3 is checksum-only. OTP SHA-256 is the S3 SigV4 floor, not a CID.",
+      "",
+      "## Local transfer (`Orian.cp`)",
+      "",
+      transfer_section(),
       ""
     ]
 
@@ -117,6 +121,27 @@ defmodule Mix.Tasks.Orian.Bench do
 
   defp fmt(nil), do: "n/a"
   defp fmt(x) when is_float(x), do: :io_lib.format("~.1f", [x]) |> IO.iodata_to_binary()
+
+  defp transfer_section do
+    root = Path.join(System.tmp_dir!(), "orian-bench-#{System.unique_integer([:positive])}")
+    src = Path.join(root, "src")
+    dst = Path.join(root, "dst")
+    File.mkdir_p!(src)
+    payload = :crypto.strong_rand_bytes(1_048_576)
+
+    for i <- 1..32 do
+      File.write!(Path.join(src, "f#{i}.bin"), payload)
+    end
+
+    {us, {:ok, %{ok: 32}}} =
+      :timer.tc(fn -> Orian.cp(Path.join(src, "*"), dst <> "/", numworkers: 32) end)
+
+    mibs = 32 / (us / 1_000_000)
+    Mix.shell().info("local cp 32×1 MiB  #{fmt(mibs)} MiB/s  workers=32")
+    File.rm_rf(root)
+
+    "| 32 × 1 MiB files | #{fmt(mibs)} MiB/s |"
+  end
 
   defp fmt_size(n) when n < 1024, do: "#{n} B"
   defp fmt_size(n) when n < 1_048_576, do: "#{div(n, 1024)} KiB"
