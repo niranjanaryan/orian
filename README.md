@@ -1,5 +1,11 @@
 # Orian
 
+[![Hex.pm](https://img.shields.io/hexpm/v/orian.svg)](https://hex.pm/packages/orian)
+[![Hexdocs](https://img.shields.io/badge/hex-docs-purple.svg)](https://hexdocs.pm/orian)
+[![CI](https://github.com/niranjanaryan/orian/actions/workflows/ci.yml/badge.svg)](https://github.com/niranjanaryan/orian/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Sponsor](https://img.shields.io/badge/sponsor-GitHub-ea4aaa.svg)](https://github.com/sponsors/niranjanaryan)
+
 Fast object transfer for Elixir — **s5cmd** / **Skyplane** class, plus BLAKE3 content ids.
 
 ```

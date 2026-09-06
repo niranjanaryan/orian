@@ -58,8 +58,12 @@ defmodule Orian.MixProject do
         "CHANGELOG.md",
         "HASH.md",
         "PERFORMANCE.md",
+        "FUNDING.md",
+        "CONTRIBUTING.md",
+        "SECURITY.md",
         "benchmark/RESULTS.md"
-      ]
+      ],
+      source_ref: "v#{@version}"
     ]
   end
 
@@ -75,7 +79,7 @@ defmodule Orian.MixProject do
         "Dusk" => "https://github.com/niranjanaryan/dusk"
       },
       files:
-        ~w(lib native/zig native/rust/src native/rust/Cargo.toml Makefile mix.exs README.md LICENSE CHANGELOG.md HASH.md PERFORMANCE.md benchmark/RESULTS.md .formatter.exs)
+        ~w(lib native/zig native/rust/src native/rust/Cargo.toml native/rust/Cargo.lock Makefile mix.exs README.md LICENSE CHANGELOG.md HASH.md PERFORMANCE.md FUNDING.md CONTRIBUTING.md SECURITY.md CODE_OF_CONDUCT.md benchmark/RESULTS.md .formatter.exs)
     ]
   end
 end
