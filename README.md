@@ -9,10 +9,11 @@
 Fast object transfer for Elixir — **s5cmd** / **Skyplane** class, plus BLAKE3 content ids.
 
 ```
-gale  — Phoenix HTTP/3
-ingot — Iroh + Zenoh cluster
-dusk  — Zenoh + Iroh cluster
-orian — parallel S3/S5 transfer
+gale   — Phoenix HTTP/3
+ingot  — Iroh + Zenoh cluster (Hex: `ingot_cluster`)
+dusk   — Zenoh + Iroh cluster
+orian  — parallel S3/S5 transfer
+zeiroh — Phoenix FLAME overlay
 ```
 
 ```elixir
