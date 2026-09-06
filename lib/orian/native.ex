@@ -16,17 +16,23 @@ defmodule Orian.Native do
   end
 
   defp nif_candidates do
+    _ = Code.ensure_loaded(Orian.CLI.Paths)
+
     app =
       case :code.priv_dir(:orian) do
         {:error, _} -> []
         dir -> [Path.join(dir, "orian_nif")]
       end
 
-    home = Path.join(Path.expand("~/.orian/priv"), "orian_nif")
     env = System.get_env("ORIAN_PRIV")
     env = if env, do: [Path.join(env, "orian_nif")], else: []
     script = escript_priv()
-    app ++ env ++ [home] ++ script ++ [Path.expand("../../priv/orian_nif", __DIR__)]
+
+    app ++
+      env ++
+      Orian.CLI.Paths.nif_dirs(:orian, "orian_nif") ++
+      script ++
+      [Path.expand("../../priv/orian_nif", __DIR__)]
   end
 
   defp escript_priv do

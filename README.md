@@ -22,7 +22,9 @@ zeiroh — Phoenix FLAME overlay
 
 ```bash
 # from this repo
-mix orian.install          # ~/.local/bin/orian  +  ~/.orian/priv NIFs
+mix orian.install
+# Linux/macOS: ~/.local/bin    Windows: %LOCALAPPDATA%\elixcoder\bin
+# needs escript (Erlang/OTP) on PATH
 
 orian cp   data/*       s3://bucket/prefix/
 orian sync s3://src/p/  s3://dst/p/

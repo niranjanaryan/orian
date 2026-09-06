@@ -85,6 +85,10 @@ defmodule OrianTest do
     :ok
   end
 
+  test "CLI install paths" do
+    assert is_binary(Orian.CLI.Paths.bin_dir())
+  end
+
   test "CLI help" do
     assert :ok = Orian.CLI.main(["--help"], halt: false)
     assert :ok = Orian.CLI.main(["version"], halt: false)

@@ -31,7 +31,10 @@ defmodule Orian.CLI do
 
   Env: AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_REGION AWS_ENDPOINT_URL
 
-  Install: mix orian.install   (escript → ~/.local/bin/orian)
+  Install: mix orian.install
+    Linux/macOS: ~/.local/bin
+    Windows:     %LOCALAPPDATA%\\elixcoder\\bin
+    Override:    ELIXCODER_BIN
   """
 
   def main(args), do: main(args, halt: !mix?())

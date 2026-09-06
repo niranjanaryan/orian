@@ -8,4 +8,4 @@ First public Hex release.
 * Rust/Tokio streaming engine — object bytes skip the BEAM
 * Zig NIF BLAKE3 (CID) and XXH3 (checksum)
 * S3 SigV4 + S5 blob CID; multipart and parallel range GET
-* `mix orian.install` → `~/.local/bin/orian`
+* `mix orian.install` (Linux/macOS/Windows)
