@@ -1,5 +1,5 @@
 defmodule Orian.Store do
-  @moduledoc false
+  @moduledoc "ETS / S3 / S5 blob store. Prefer `Orian.put/2` and `Orian.get/2`."
 
   @table :orian_memory
 
