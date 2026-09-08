@@ -14,6 +14,8 @@ defmodule Orian.CLI do
     orian rm   LOC
     orian cat  LOC
     orian run  FILE
+    orian stacks snapshot SRC DST
+    orian stacks relay-state SRC DST
     orian version
 
   SRC/DST: path, glob, s3://bucket/key, gs://bucket/key
@@ -146,6 +148,14 @@ defmodule Orian.CLI do
 
     info("run #{length(results)} commands")
     :ok
+  end
+
+  defp dispatch(["stacks", "snapshot", src, dst | _], kw) do
+    print_stats(Orian.Transfer.sync(src, dst, Keyword.put(kw, :stacks_preset, :node_snapshot)))
+  end
+
+  defp dispatch(["stacks", "relay-state", src, dst | _], kw) do
+    print_stats(Orian.Transfer.sync(src, dst, Keyword.put(kw, :stacks_preset, :relay_state)))
   end
 
   defp dispatch(_, _) do
