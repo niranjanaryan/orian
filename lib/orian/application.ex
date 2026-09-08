@@ -4,11 +4,19 @@ defmodule Orian.Application do
 
   @impl true
   def start(_type, _args) do
+    maybe_cli()
     _ = Application.ensure_all_started(:inets)
     _ = Application.ensure_all_started(:ssl)
     start_httpc()
 
     Supervisor.start_link([], strategy: :one_for_one, name: Orian.Supervisor)
+  end
+
+  defp maybe_cli do
+    if System.get_env("RELEASE_NAME") == "orian" do
+      args = :init.get_plain_arguments() |> Enum.map(&List.to_string/1)
+      Orian.CLI.main(args, halt: true)
+    end
   end
 
   defp start_httpc do

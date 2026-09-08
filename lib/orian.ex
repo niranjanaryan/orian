@@ -11,7 +11,7 @@ defmodule Orian do
 
       {:ok, cid} = Orian.put(body)
 
-  Clustering stays [Ingot](https://github.com/niranjanaryan/ingot) /
+  Clustering stays [IngotCluster](https://github.com/niranjanaryan/ingot_cluster) /
   [Dusk](https://github.com/niranjanaryan/dusk). HTTP/3 is
   [Gale](https://github.com/niranjanaryan/gale).
   """

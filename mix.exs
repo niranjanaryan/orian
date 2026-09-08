@@ -13,6 +13,7 @@ defmodule Orian.MixProject do
       deps: deps(),
       aliases: aliases(),
       escript: [main_module: Orian.CLI, name: "orian"],
+      releases: releases(),
       docs: docs(),
       package: package(),
       description: description(),
@@ -33,7 +34,8 @@ defmodule Orian.MixProject do
     [
       {:telemetry, "~> 1.0"},
       {:rustler, "~> 0.38"},
-      {:ex_doc, "~> 0.38", only: :dev, runtime: false}
+      {:ex_doc, "~> 0.38", only: :dev, runtime: false},
+      {:burrito, "~> 1.6", optional: true, runtime: false}
     ]
   end
 
@@ -42,6 +44,29 @@ defmodule Orian.MixProject do
       test: ["orian.build", "test"],
       bench: ["orian.build", "orian.bench"],
       "orian.cli": ["orian.build", "escript.build"]
+    ]
+  end
+
+  def wrap(%Mix.Release{} = release) do
+    if Code.ensure_loaded?(Burrito), do: Burrito.wrap(release), else: release
+  end
+
+  defp releases do
+    [
+      orian: [
+        steps: [:assemble, &__MODULE__.wrap/1],
+        burrito: [targets: burrito_targets()]
+      ]
+    ]
+  end
+
+  defp burrito_targets do
+    [
+      macos: [os: :darwin, cpu: :x86_64, skip_nifs: true],
+      macos_silicon: [os: :darwin, cpu: :aarch64, skip_nifs: true],
+      linux: [os: :linux, cpu: :x86_64, skip_nifs: true],
+      linux_aarch64: [os: :linux, cpu: :aarch64, skip_nifs: true],
+      windows: [os: :windows, cpu: :x86_64, skip_nifs: true]
     ]
   end
 
@@ -75,7 +100,7 @@ defmodule Orian.MixProject do
         "GitHub" => @source_url,
         "Sponsor" => "https://github.com/sponsors/niranjanaryan",
         "Gale" => "https://github.com/niranjanaryan/gale",
-        "Ingot" => "https://github.com/niranjanaryan/ingot",
+        "IngotCluster" => "https://github.com/niranjanaryan/ingot_cluster",
         "Dusk" => "https://github.com/niranjanaryan/dusk"
       },
       files:
