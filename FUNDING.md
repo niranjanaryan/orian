@@ -17,6 +17,17 @@ Support the development of **Orian** and the distributed Elixir stack.
 
 One-time sponsorships are also welcome.
 
+## Grants & Organizational Support
+
+Open to research grants, maintenance contracts, and feature sponsorships. Ideal for organizations running distributed Elixir in production that need:
+
+- Security-reviewed, maintained dependencies
+- OTP/Elixir version compatibility
+- Performance benchmarks and optimization
+- Custom feature development or integration support
+
+Contact via GitHub Sponsors or open a discussion.
+
 ## What You're Funding
 
 - **BLAKE3 / S3 / S5 storage** — content-addressed storage, CID, integrity verification
